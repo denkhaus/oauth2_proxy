@@ -8,7 +8,6 @@ import (
 	"log"
 	"net"
 	"net/http"
-	"net/http/httputil"
 	"net/url"
 	"regexp"
 	"strings"
@@ -91,10 +90,8 @@ func (u *UpstreamProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	u.handler.ServeHTTP(w, r)
 }
 
-func NewReverseProxy(target *url.URL) (proxy *httputil.ReverseProxy) {
-	return httputil.NewSingleHostReverseProxy(target)
-}
-func setProxyUpstreamHostHeader(proxy *httputil.ReverseProxy, target *url.URL) {
+
+func setProxyUpstreamHostHeader(proxy *WebsocketReverseProxy, target *url.URL) {
 	director := proxy.Director
 	proxy.Director = func(req *http.Request) {
 		director(req)
@@ -104,7 +101,7 @@ func setProxyUpstreamHostHeader(proxy *httputil.ReverseProxy, target *url.URL) {
 		req.URL.RawQuery = ""
 	}
 }
-func setProxyDirector(proxy *httputil.ReverseProxy) {
+func setProxyDirector(proxy *WebsocketReverseProxy) {
 	director := proxy.Director
 	proxy.Director = func(req *http.Request) {
 		director(req)
@@ -130,7 +127,7 @@ func NewOAuthProxy(opts *Options, validator func(string) bool) *OAuthProxy {
 		case "http", "https":
 			u.Path = ""
 			log.Printf("mapping path %q => upstream %q", path, u)
-			proxy := NewReverseProxy(u)
+			proxy := NewWebsocketReverseProxy(u)
 			if !opts.PassHostHeader {
 				setProxyUpstreamHostHeader(proxy, u)
 			} else {
