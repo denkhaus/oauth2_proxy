@@ -8,6 +8,7 @@ import (
 	"golang.org/x/oauth2"
 
 	"github.com/coreos/go-oidc"
+	"log"
 )
 
 type OIDCProvider struct {
@@ -50,7 +51,7 @@ func (p *OIDCProvider) SetGroupRestriction(groups []string) {
 	p.GroupValidator = func(state *SessionState) bool {
 		accessToken, err := p.Verifier.Verify(context.Background(), state.AccessToken)
 		if err != nil {
-			fmt.Printf("could not verify access_token: %v", err)
+			log.Printf("Could not verify access_token: %v for user %s", err, state.User)
 			return false
 		}
 
@@ -61,7 +62,7 @@ func (p *OIDCProvider) SetGroupRestriction(groups []string) {
 		}
 
 		if err := accessToken.Claims(&roles); err != nil {
-			fmt.Printf("failed to parse access_token claims: %v", err)
+			log.Printf("Failed to parse access_token claims: %v for user %s", err, state.User)
 			return false
 		}
 
@@ -72,7 +73,7 @@ func (p *OIDCProvider) SetGroupRestriction(groups []string) {
 			}
 		}
 
-		fmt.Printf("user %s does not have required roles", state.User)
+		log.Printf("User %s does not have required roles", state.User)
 		return false
 	}
 }
