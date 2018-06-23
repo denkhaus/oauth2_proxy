@@ -7,18 +7,22 @@ import (
 
 	"golang.org/x/oauth2"
 
-	oidc "github.com/coreos/go-oidc"
+	"github.com/coreos/go-oidc"
 )
 
 type OIDCProvider struct {
 	*ProviderData
 
-	Verifier *oidc.IDTokenVerifier
+	Verifier       *oidc.IDTokenVerifier
+	GroupValidator func(*SessionState) bool
 }
 
 func NewOIDCProvider(p *ProviderData) *OIDCProvider {
 	p.ProviderName = "OpenID Connect"
-	return &OIDCProvider{ProviderData: p}
+	return &OIDCProvider{ProviderData: p,
+		GroupValidator: func(s *SessionState) bool {
+			return true
+		}}
 }
 
 func (p *OIDCProvider) Redeem(redirectURL, code string) (s *SessionState, err error) {
@@ -40,6 +44,51 @@ func (p *OIDCProvider) Redeem(redirectURL, code string) (s *SessionState, err er
 		return nil, fmt.Errorf("unable to update session: %v", err)
 	}
 	return
+}
+
+func (p *OIDCProvider) SetGroupRestriction(groups []string) {
+	p.GroupValidator = func(state *SessionState) bool {
+		accessToken, err := p.Verifier.Verify(context.Background(), state.AccessToken)
+		if err != nil {
+			fmt.Printf("could not verify access_token: %v", err)
+			return false
+		}
+
+		var roles struct {
+			RealmAccess struct {
+				Roles []string `json:"roles"`
+			} `json:"realm_access"`
+		}
+
+		if err := accessToken.Claims(&roles); err != nil {
+			fmt.Printf("failed to parse access_token claims: %v", err)
+			return false
+		}
+
+		print(len(roles.RealmAccess.Roles))
+		for _, existingRole := range roles.RealmAccess.Roles {
+			if contains(groups, existingRole) {
+				return true
+			}
+		}
+
+		fmt.Printf("user %s does not have required roles", state.User)
+		return false
+	}
+}
+
+func contains(slice []string, item string) bool {
+	set := make(map[string]struct{}, len(slice))
+	for _, s := range slice {
+		set[s] = struct{}{}
+	}
+
+	_, ok := set[item]
+	return ok
+}
+
+func (p *OIDCProvider) ValidateGroup(session *SessionState) bool {
+	return p.GroupValidator(session)
 }
 
 func (p *OIDCProvider) RefreshSessionIfNeeded(s *SessionState) (bool, error) {
