@@ -9,6 +9,8 @@ import (
 
 	"github.com/coreos/go-oidc"
 	"log"
+	"net/http"
+	"github.com/bitly/oauth2_proxy/api"
 )
 
 type OIDCProvider struct {
@@ -24,6 +26,25 @@ func NewOIDCProvider(p *ProviderData) *OIDCProvider {
 		GroupValidator: func(s *SessionState) bool {
 			return true
 		}}
+}
+
+func (p *OIDCProvider) GetEmailAddress(state *SessionState) (email string, err error) {
+	req, err := http.NewRequest("GET",
+		p.ValidateURL.String(), nil)
+
+	req.Header.Add("Authorization", "Bearer "+state.AccessToken)
+
+	if err != nil {
+		log.Printf("failed building request %s", err)
+		return "", err
+	}
+
+	json, err := api.Request(req)
+	if err != nil {
+		log.Printf("failed making request %s", err)
+		return "", err
+	}
+	return json.Get("email").String()
 }
 
 func (p *OIDCProvider) Redeem(redirectURL, code string) (s *SessionState, err error) {
