@@ -73,6 +73,7 @@ type OAuthProxy struct {
 	compiledRegex       []*regexp.Regexp
 	templates           *template.Template
 	Footer              string
+	AllowBearer         bool
 }
 
 type UpstreamProxy struct {
@@ -89,7 +90,6 @@ func (u *UpstreamProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	u.handler.ServeHTTP(w, r)
 }
-
 
 func setProxyUpstreamHostHeader(proxy *WebsocketReverseProxy, target *url.URL) {
 	director := proxy.Director
@@ -207,6 +207,7 @@ func NewOAuthProxy(opts *Options, validator func(string) bool) *OAuthProxy {
 		CookieCipher:       cipher,
 		templates:          loadTemplates(opts.CustomTemplatesDir),
 		Footer:             opts.Footer,
+		AllowBearer:        opts.AllowBearerHeader,
 	}
 }
 
@@ -371,7 +372,7 @@ func (p *OAuthProxy) makeCookie(req *http.Request, name string, value string, ex
 
 func (p *OAuthProxy) ClearCSRFCookie(rw http.ResponseWriter, req *http.Request) {
 
-	http.SetCookie(rw, p.MakeCSRFCookie(req, "", time.Hour*-1, time.Now()))
+	http.SetCookie(rw, p.MakeCSRFCookie(req, "", time.Hour * -1, time.Now()))
 }
 
 func (p *OAuthProxy) SetCSRFCookie(rw http.ResponseWriter, req *http.Request, val string) {
@@ -379,7 +380,7 @@ func (p *OAuthProxy) SetCSRFCookie(rw http.ResponseWriter, req *http.Request, va
 }
 
 func (p *OAuthProxy) ClearSessionCookie(rw http.ResponseWriter, req *http.Request) {
-	cookies := p.MakeSessionCookie(req, "", time.Hour*-1, time.Now())
+	cookies := p.MakeSessionCookie(req, "", time.Hour * -1, time.Now())
 	for _, clr := range cookies {
 		http.SetCookie(rw, clr)
 	}
@@ -755,6 +756,13 @@ func (p *OAuthProxy) Authenticate(rw http.ResponseWriter, req *http.Request) int
 	}
 
 	if session == nil {
+		session, err = p.CheckURLParam(req)
+		if err != nil {
+			log.Printf("%s %s", remoteAddr, err)
+		}
+	}
+
+	if session == nil {
 		return http.StatusForbidden
 	}
 
@@ -835,6 +843,10 @@ func (p *OAuthProxy) CheckBasicAuth(value string) (*providers.SessionState, erro
 }
 
 func (p *OAuthProxy) CheckBearerAuth(value string) (*providers.SessionState, error) {
+	if false == p.AllowBearer {
+		return nil, nil
+	}
+
 	email, err := p.provider.GetEmailAddress(&providers.SessionState{AccessToken: value})
 	if err != nil {
 		return nil, errors.New("invalid bearer token")
@@ -844,4 +856,18 @@ func (p *OAuthProxy) CheckBearerAuth(value string) (*providers.SessionState, err
 		Email:       email,
 		User:        email,
 	}, nil
+}
+
+func (p *OAuthProxy) CheckURLParam(req *http.Request) (*providers.SessionState, error) {
+	if req.Method != http.MethodGet {
+		return nil, nil
+	}
+
+	value := req.URL.Query().Get("acess_token")
+
+	if value == "" {
+		return nil, nil
+	}
+
+	return p.CheckBearerAuth(value)
 }

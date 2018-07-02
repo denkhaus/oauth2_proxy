@@ -63,6 +63,7 @@ type Options struct {
 	SetAuthorization      bool     `flag:"set-authorization-header" cfg:"set_authorization_header"`
 	PassAuthorization     bool     `flag:"pass-authorization-header" cfg:"pass_authorization_header"`
 	SkipAuthPreflight     bool     `flag:"skip-auth-preflight" cfg:"skip_auth_preflight"`
+	AllowBearerHeader     bool     `flag:"allow-bearer" cfg:"allow_bearer"`
 
 	// These options allow for other providers besides Google, with
 	// potential overrides.
@@ -117,6 +118,7 @@ func NewOptions() *Options {
 		PassAuthorization:    false,
 		ApprovalPrompt:       "force",
 		RequestLogging:       true,
+		AllowBearerHeader:    false,
 		RequestLoggingFormat: defaultRequestLoggingFormat,
 	}
 }
