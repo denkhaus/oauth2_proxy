@@ -863,7 +863,7 @@ func (p *OAuthProxy) CheckURLParam(req *http.Request) (*providers.SessionState, 
 		return nil, nil
 	}
 
-	value := req.URL.Query().Get("acess_token")
+	value := req.URL.Query().Get("access_token")
 
 	if value == "" {
 		return nil, nil
