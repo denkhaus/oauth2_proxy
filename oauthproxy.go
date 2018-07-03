@@ -736,6 +736,15 @@ func (p *OAuthProxy) Authenticate(rw http.ResponseWriter, req *http.Request) int
 		clearSession = true
 	}
 
+	if session == nil {
+		session, err = p.CheckURLParam(req)
+		if err != nil {
+			log.Printf("%s %s", remoteAddr, err)
+		} else {
+			saveSession = true
+		}
+	}
+
 	if saveSession && session != nil {
 		err := p.SaveSession(rw, req, session)
 		if err != nil {
@@ -750,13 +759,6 @@ func (p *OAuthProxy) Authenticate(rw http.ResponseWriter, req *http.Request) int
 
 	if session == nil {
 		session, err = p.CheckAuthHeader(req)
-		if err != nil {
-			log.Printf("%s %s", remoteAddr, err)
-		}
-	}
-
-	if session == nil {
-		session, err = p.CheckURLParam(req)
 		if err != nil {
 			log.Printf("%s %s", remoteAddr, err)
 		}
