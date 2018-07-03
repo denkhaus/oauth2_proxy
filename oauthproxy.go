@@ -863,19 +863,17 @@ func (p *OAuthProxy) CheckURLParam(req *http.Request) (*providers.SessionState, 
 		return nil, nil
 	}
 
-	log.Printf("url param check")
+	const urlKey = "access_token"
 
 	var accessToken string
 	xUrl := req.Header.Get("X-Original-URI")
 	if xUrl != "" {
-		log.Printf("xurl: %s", xUrl)
 		origUrl, err := url.Parse(xUrl)
-		if err != nil {
-			accessToken = origUrl.Query().Get("access_token")
+		if err == nil {
+			accessToken = origUrl.Query().Get(urlKey)
 		}
 	} else {
-		log.Printf("no header")
-		accessToken = req.URL.Query().Get("access_token")
+		accessToken = req.URL.Query().Get(urlKey)
 	}
 
 	if accessToken == "" {
