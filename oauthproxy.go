@@ -13,9 +13,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/bitly/oauth2_proxy/cookie"
-	"github.com/bitly/oauth2_proxy/providers"
 	"github.com/mbland/hmacauth"
+	"github.com/denkhaus/oauth2_proxy/cookie"
+	"github.com/denkhaus/oauth2_proxy/providers"
 )
 
 const SignatureHeader = "GAP-Signature"
@@ -23,7 +23,7 @@ const SignatureHeader = "GAP-Signature"
 var SignatureHeaders []string = []string{
 	"Content-Length",
 	"Content-Md5",
-	"Content-Type",
+	"Content-Type",  
 	"Date",
 	"Authorization",
 	"X-Forwarded-User",
@@ -372,7 +372,7 @@ func (p *OAuthProxy) makeCookie(req *http.Request, name string, value string, ex
 
 func (p *OAuthProxy) ClearCSRFCookie(rw http.ResponseWriter, req *http.Request) {
 
-	http.SetCookie(rw, p.MakeCSRFCookie(req, "", time.Hour * -1, time.Now()))
+	http.SetCookie(rw, p.MakeCSRFCookie(req, "", time.Hour*-1, time.Now()))
 }
 
 func (p *OAuthProxy) SetCSRFCookie(rw http.ResponseWriter, req *http.Request, val string) {
@@ -380,7 +380,7 @@ func (p *OAuthProxy) SetCSRFCookie(rw http.ResponseWriter, req *http.Request, va
 }
 
 func (p *OAuthProxy) ClearSessionCookie(rw http.ResponseWriter, req *http.Request) {
-	cookies := p.MakeSessionCookie(req, "", time.Hour * -1, time.Now())
+	cookies := p.MakeSessionCookie(req, "", time.Hour*-1, time.Now())
 	for _, clr := range cookies {
 		http.SetCookie(rw, clr)
 	}

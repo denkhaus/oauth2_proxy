@@ -7,10 +7,11 @@ import (
 
 	"golang.org/x/oauth2"
 
-	"github.com/coreos/go-oidc"
 	"log"
 	"net/http"
-	"github.com/bitly/oauth2_proxy/api"
+
+	"github.com/coreos/go-oidc"
+	"github.com/denkhaus/oauth2_proxy/api"
 )
 
 type OIDCProvider struct {
